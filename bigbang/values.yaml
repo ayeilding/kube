@@ -1,4 +1,4 @@
-hostname: bigbang.dev
+hostname: bb.local
 
 flux:
   interval: 1m
