@@ -60,15 +60,13 @@ istio:
         # Node port will be assigned as follows: Port 15021 (Status) = nodePortBase, Port 80 = nodePortBase+1, Port 443 = nodePortBase+2, Port 15443 (SNI) = nodePortBase+3
         # Node port base should be in the range from 30000 to 32764
         nodePortBase: 32000  # Alternatively, the kubernetesResourceSpec can be used to configure all port parameters
-
-gateways:
-  passthrough:
-    ingressGateway: "passthrough-ingressgateway"
-    hosts:
-    - "*.{{ .Values.hostname }}"
-    tls:
-      mode: "PASSTHROUGH"
-
+    gateways:
+      passthrough:
+        ingressGateway: "passthrough-ingressgateway"
+        hosts:
+        - "*.{{ .Values.hostname }}"
+        tls:
+          mode: "PASSTHROUGH"
 
 clusterAuditor:
   enabled: false
