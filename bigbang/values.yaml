@@ -433,7 +433,7 @@ addons:
       cleanUpCRDs: true
 
   keycloak:
-    enabled: false
+    enabled: true
     values:
       replicas: 1
       resources:
