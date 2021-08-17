@@ -61,13 +61,6 @@ istio:
       # Node port base should be in the range from 30000 to 32764
       nodePortBase: 32000  # Alternatively, the kubernetesResourceSpec can be used to configure all port parameters
   gateways:
-    public:
-      ingressGateway: "public-ingressgateway"
-      hosts:
-      - "*.{{ .Values.hostname }}"
-      tls:
-        key: ""
-        cert: ""
     passthrough:
       ingressGateway: "passthrough-ingressgateway"
       hosts:
@@ -363,10 +356,10 @@ addons:
         enabled: false
 
   minioOperator:
-    enabled: true
+    enabled: false
 
   minio:
-    enabled: true
+    enabled: false
     values:
       zones:
         servers: 1
