@@ -5,6 +5,10 @@ flux:
   rollback:
     cleanupOnFail: false
 
+networkPolicies:
+  enabled: false
+  controlPlaneCidr: 172.16.0.0/12
+
 eckoperator:
   enabled: false
 
@@ -31,6 +35,12 @@ logging:
     kibana:
       count: 1
 
+gatekeeper:
+  enabled: false
+  # Directly modify chart values for dev workloads
+  values:
+    replicas: 1
+
 fluentbit:
   enabled: false
   values:
@@ -40,7 +50,36 @@ fluentbit:
 jaeger:
   enabled: false
 
+kiali:
+  enabled: false
+
 istio:
+  ingressGateways:
+    public-ingressgateway:
+      type: "LoadBalancer" # or "NodePort"
+      kubernetesResourceSpec: {} # https://istio.io/latest/docs/reference/config/istio.operator.v1alpha1/#KubernetesResourcesSpec
+
+    # private-ingressgateway:
+    #   type: "LoadBalancer" # or "NodePort"
+    #   kubernetesResourceSpec: # https://istio.io/latest/docs/reference/config/istio.operator.v1alpha1/#KubernetesResourcesSpec
+    #     serviceAnnotations: # Example for AWS internal load balancer
+    #       service.beta.kubernetes.io/aws-load-balancer-type: nlb
+    #       service.beta.kubernetes.io/aws-load-balancer-internal: "true"
+
+    passthrough-ingressgateway:
+      type: "NodePort" # or "LoadBalancer"
+      # Node ports are assigned starting from nodePortBase.  The nodePortBase specifies the start of a range of 4 unused node ports.
+      # Node port will be assigned as follows: Port 15021 (Status) = nodePortBase, Port 80 = nodePortBase+1, Port 443 = nodePortBase+2, Port 15443 (SNI) = nodePortBase+3
+      # Node port base should be in the range from 30000 to 32764
+      nodePortBase: 32000  # Alternatively, the kubernetesResourceSpec can be used to configure all port parameters
+  gateways:
+    passthrough:
+      ingressGateway: "passthrough-ingressgateway"
+      hosts:
+      - "*.{{ .Values.hostname }}"
+      tls:
+        mode: "PASSTHROUGH"
+
   # Directly modify chart values for dev workloads
   values:
     kiali:
@@ -55,7 +94,6 @@ istio:
         # Enable cross zone load balancing
         service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
 
-
 clusterAuditor:
   enabled: false
   values:
@@ -68,19 +106,6 @@ clusterAuditor:
 monitoring:
   enabled: false
   values:
-    alertmanager:
-      alertmanagerSpec:
-        resources:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits: {}
-    prometheusOperator:
-      resources:
-        requests:
-          cpu: 250m
-          memory: 400Mi
-        limits: {}
     prometheus:
       prometheusSpec:
         resources:
@@ -88,34 +113,18 @@ monitoring:
             cpu: 100m
             memory: 200Mi
           limits: {}
-    grafana:
-      resources:
-        requests:
-          cpu: 100m
-          memory: 128Mi
-        limits: {}
-    kubeStateMetrics:
+    kube-state-metrics:
       resources:
         requests:
           cpu: 10m
           memory: 32Mi
         limits: {}
-    nodeExporter:
+    prometheus-node-exporter:
       resources:
         requests:
           cpu: 100m
           memory: 30Mi
         limits: {}
-
-gatekeeper:
-  enabled: false
-  values:
-    replicas: 1
-    resources:
-      requests:
-        cpu: 100m
-        memory: 256Mi
-      limits: {}
 
 twistlock:
   enabled: false
@@ -127,37 +136,37 @@ twistlock:
 # Explicitly enable all addons for CI
 addons:
   argocd:
-    enabled: false
+    enabled: true
     values:
       controller:
         resources:
           requests:
-            cpu: 100m
-            memory: 200Mi
+            cpu: 500m
+            memory: 2Gi
           limits: {}
       dex:
         resources:
           requests:
-            cpu: 100m
-            memory: 200Mi
+            cpu: 10m
+            memory: 128Mi
           limits: {}
       redis:
         resources:
           requests:
-            cpu: 100m
-            memory: 200Mi
+            cpu: 50m
+            memory: 64Mi
           limits: {}
       server:
         resources:
           requests:
-            cpu: 100m
-            memory: 200Mi
+            cpu: 20m
+            memory: 128Mi
           limits: {}
       repoServer:
         resources:
           requests:
-            cpu: 100m
-            memory: 200Mi
+            cpu: 50m
+            memory: 128Mi
           limits: {}
 
   authservice:
@@ -244,9 +253,30 @@ addons:
   anchore:
     enabled: false
     values:
+      ensureDbJobs:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits: {}
+      sso:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits: {}
       postgresql:
-        persistence:
-          size: 20Gi
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi 
+          limits: {}       
+        metrics:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits: {}
       anchoreAnalyzer:
         resources:
           requests:
@@ -277,14 +307,38 @@ addons:
             cpu: 100m
             memory: 200Mi
           limits: {}
+      anchoreEngineUpgradeJob:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits: {}
+      anchore-feeds-db:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits: {}
+        metrics:
+          resources:
+            requests:
+              cpu: 100m
+              memory: 200Mi
+            limits: {}
       anchoreEnterpriseFeeds:
         resources:
           requests:
             cpu: 100m
             memory: 200Mi
           limits: {}
+      anchoreEnterpriseFeedsUpgradeJob:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits: {}
       anchoreEnterpriseRbac:
-        authResource:
+        authResources:
           resources:
             requests:
               cpu: 100m
@@ -302,11 +356,6 @@ addons:
             cpu: 100m
             memory: 200Mi
           limits: {}
-        resources:
-          requests:
-            cpu: 100m
-            memory: 200Mi
-          limits: {}
       anchoreEnterpriseNotifications:
         resources:
           requests:
@@ -314,6 +363,12 @@ addons:
             memory: 200Mi
           limits: {}
       anchoreEntperpiseUi:
+        resources:
+          requests:
+            cpu: 100m
+            memory: 200Mi
+          limits: {}
+      anchoreEnterpriseEngineUpgradeJob:
         resources:
           requests:
             cpu: 100m
@@ -343,11 +398,13 @@ addons:
         enabled: false
 
   minioOperator:
-    enabled: true
+    enabled: false
 
   minio:
-    enabled: true
+    enabled: false
     values:
+      upgradeTenants:
+        enabled: true
       zones:
         servers: 1
       volumesPerServer: 1
@@ -367,6 +424,8 @@ addons:
           memory: 128Mi
         limits: {}
       minio:
+        upgradeTenants:
+          enabled: true
         zones:
           servers: 1
         volumesPerServer: 1
@@ -375,7 +434,8 @@ addons:
     enabled: false
     values:
       persistence:
-        storageSize: 3Gi
+        # Do NOT set this below 4Gi, nexus will fail to boot
+        storageSize: 10Gi
       nexus:
       # https://help.sonatype.com/repomanager3/installation/system-requirements#SystemRequirements-JVMDirectMemory
         env:
@@ -388,9 +448,9 @@ addons:
 
   velero:
     enabled: false
+    plugins:
+    - aws
     values:
-      installCRDs: true
-
       # Set provider name and backup storage location bucket name
       configuration:
         provider: aws
@@ -407,11 +467,7 @@ addons:
       #      bucket: velero
       #      region: us-west-1
 
-      # Default to AWS Plugin, update to others as they are supported
-      plugins:
-        - aws
-
-      #schedules:
+      # schedules:
       #  mybackup:
       #    labels:
       #      myenv: foo
@@ -426,14 +482,10 @@ addons:
         server:
           name: velero
 
-      # Whether or not to clean up CustomResourceDefintions when deleting a release.
-      # Cleaning up CRDs will delete the BackupStorageLocation and VolumeSnapshotLocation instances, which would have to be reconfigured.
-      # Backup data in object storage will _not_ be deleted, however Backup instances in the Kubernetes API will.
-      # Always clean up CRDs in CI.
-      cleanUpCRDs: true
-
   keycloak:
-    enabled: false
+    enabled: true
+    ingress:
+      gateway: "public"
     values:
       replicas: 1
       resources:
