@@ -182,7 +182,7 @@ addons:
         limits: {}
 
   gitlab:
-    enabled: false
+    enabled: true
     sso:
       enabled: false
     values:
