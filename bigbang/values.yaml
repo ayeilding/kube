@@ -242,7 +242,7 @@ addons:
           limits: {}
 
   gitlabRunner:
-    enabled: false
+    enabled: true
     values:
       resources:
         requests:
