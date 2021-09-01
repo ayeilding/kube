@@ -136,7 +136,7 @@ twistlock:
 # Explicitly enable all addons for CI
 addons:
   argocd:
-    enabled: false
+    enabled: true
     values:
       controller:
         resources:
@@ -431,7 +431,7 @@ addons:
         volumesPerServer: 1
 
   nexus:
-    enabled: true
+    enabled: false
     values:
       persistence:
         # Do NOT set this below 4Gi, nexus will fail to boot
